@@ -15,6 +15,7 @@ from itsdangerous import URLSafeTimedSerializer
 
 import os
 import re
+import secrets
 
 
 # =============================
@@ -22,10 +23,10 @@ import re
 # =============================
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_super_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///users.db")
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+print(secrets.token_hex(16))  # Generate a random secret key for testing
 # =============================
 # Mail Configuration (SMTP)
 # =============================
