@@ -23,7 +23,7 @@ import re
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_super_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///users.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # =============================
@@ -33,8 +33,8 @@ app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = "iamgroot130204@gmail.com"
-app.config['MAIL_PASSWORD'] = "yooddtjtdjjkryeq"
+app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
 
 db = SQLAlchemy(app)
 
@@ -243,7 +243,8 @@ def reset_password(token):
 # Run App
 # =============================
 
-if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()   # Create DB if not exists
-    app.run(debug=True)
+with app.app_context():
+    db.create_all()
+
+# Vercel needs this to run the app
+app = app
