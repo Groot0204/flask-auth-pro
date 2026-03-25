@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</head>
+
+<body>
+
+    <div class="dashboard-wrapper">
+
+        <div class="dashboard-card">
+            <h1>Welcome, {{ current_user.username }}</h1>
+
+            <p>Email: {{ current_user.email }}</p>
+
+            <div class="dashboard-actions">
+                <a href="{{ url_for('logout') }}">
+                    <button class="logout-btn">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+<<<<<<< HEAD
+flask
+flask_sqlalchemy
+flask_login
+flask-mail
+werkzeug
+=======
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-Mail
+psycopg2-binary
+gunicorn
+itsdangerous
+>>>>>>> ac2ccae5f789184c591ad1a85935e4f806729b1f
