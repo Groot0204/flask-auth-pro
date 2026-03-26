@@ -24,9 +24,14 @@ import secrets
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+
+db_url = os.environ.get("DATABASE_URL")
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-print(secrets.token_hex(16))  # Generate a random secret key for testing
+print(secrets.token_hex(32))  # Generate a random secret key for testing
+
 # =============================
 # Mail Configuration (SMTP)
 # =============================
@@ -242,10 +247,6 @@ def reset_password(token):
 
 # =============================
 # Run App
-# =============================
-
-with app.app_context():
-    db.create_all()
-
 # Vercel needs this to run the app
+# =============================
 app = app
