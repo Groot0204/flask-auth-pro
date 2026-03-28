@@ -1,15 +1,15 @@
-# 🔐 Flask Authentication System  
-### (Flask • Vercel Serverless • PostgreSQL • Email Reset)
+# 🔐 Flask Auth Pro  
+### Production-Ready Authentication System (Flask • Vercel • PostgreSQL • Email Reset)
 
-A **production-ready authentication system** built using Flask and deployed on **Vercel serverless architecture**, featuring secure login, registration, and password recovery using token-based authentication.
+A **full-stack authentication system** built using Flask and deployed on **Vercel serverless architecture**, featuring secure login, registration, and email-based password recovery.
 
-> ⚡ Built with real-world deployment constraints and solutions (Flask on Vercel + cloud database integration)
+> ⚡ Built with real-world challenges: serverless backend, cloud database, and secure authentication flow.
 
 ---
 
-# 🚀 Live Demo
+## 🌐 Live Demo
 
-https://flask-auth-system-groot.vercel.app
+🔗 https://flask-auth-pro-groot.vercel.app
 
 ---
 
@@ -19,7 +19,7 @@ https://flask-auth-system-groot.vercel.app
 - User Registration with validation
 - Login using **username OR email**
 - Secure logout system
-- Protected routes using Flask-Login
+- Protected Dashboard(@login_required)
 
 ### 🔐 Security Implementation
 - Password hashing using `Werkzeug`
@@ -27,13 +27,13 @@ https://flask-auth-system-groot.vercel.app
   - Minimum 8 characters
   - Uppercase, lowercase
   - Number + special character
-- Secure token-based password reset
-- Token expiration handling
+- Secure token-based password reset (itsdangerous)
+- Token expiration (10 minutes)
 
-### 📧 Password Recovery
-- Email-based reset system (SMTP)
-- Unique signed reset links using `itsdangerous`
-- Safe password update flow
+### 📧 Email System
+- Password reset via SMTP(Flask-Mail)
+- Secure reset links
+- HTML email support
 
 ### ⚡ Deployment & Backend
 - Serverless deployment using **Vercel**
@@ -41,6 +41,13 @@ https://flask-auth-system-groot.vercel.app
 - Environment variable-based configuration
 - Production-ready structure
 
+### 🎨 UI / UX
+- Modern Glassmorphism Design
+- Fully responsive (Mobile + Desktop)
+- Animated login/register toggle
+- Password strength meter (real-time)
+- Flash messages with auto-dismiss
+- Button loading states
 ---
 
 # 🛠 Tech Stack
@@ -51,10 +58,11 @@ https://flask-auth-system-groot.vercel.app
 | **Flask-Login**       | Authentication & session management |
 | **Flask-SQLAlchemy**  | ORM for database operations         |
 | **PostgreSQL (Neon)** | Cloud database                      |
-| **psycopg2**          | PostgreSQL adapter                  |
+| **Flask-Mail**        | Email                               |
 | **Werkzeug**          | Password hashing                    |
 | **itsdangerous**      | Secure token generation             |
 | **Vercel**            | Serverless deployment platform      |
+| **Frontend**          | HTML, CSS, JavaScript               |
 
 ---
 
@@ -88,34 +96,32 @@ flask-auth-system/
 
 *(You can add screenshots here for better presentation)*
 
-### Login Page
+## 📸 Screenshots
 
-![Login Page](assets/login.png)
-![Login Page](assets/mobile-login.png)
+### 🔐 Authentication UI
+![Login](assets/login.png)
+![Register](assets/register.png)
 
-### Registration Page
+### 📱 Mobile View
+![Mobile Login](assets/mobile-login.png)
 
-![Register Page](assets/register.png)
-![Register Page](assets/mobile-register.png)
-
-### Dashboard
-
+### 📊 Dashboard
 ![Dashboard](assets/dashboard.png)
-![Dashboard](assets/mobile-dashboard.png)
 
----
 
 # 🏗 System Architecture
 
 ```
 User Browser
       ↓
-Vercel Serverless Flask Application
+Vercel Serverless Function (Flask)
+      ↓
+SQLAlchemy ORM
       ↓
 Neon PostgreSQL Cloud Database
 ```
 
-Flow:
+# 🔄 Authentication Flow:
 
 1. User sends request from browser
 2. Flask serverless function processes request
@@ -129,34 +135,31 @@ Flow:
 
 The following environment variables must be configured in **Vercel → Project Settings → Environment Variables**
 
-| Variable       | Description                                    |
-| -------------- | ---------------------------------------------- |
-| `DATABASE_URL` | PostgreSQL connection string from Neon         |
-| `SECRET_KEY`   | Secret key used for session and token security |
+| Variable      | Description                       |
+| ------------- | --------------------------------- |
+| DATABASE_URL  | Neon PostgreSQL connection string |
+| SECRET_KEY    | Flask secret key                  |
+| MAIL_USERNAME | Email for SMTP                    |
+| MAIL_PASSWORD | App password                      |
 
 Example:
 
 ```
 DATABASE_URL=postgresql://username:password@host/dbname?sslmode=require
-SECRET_KEY=your_secure_secret_key
+SECRET_KEY=your_secret_key
+MAIL_USERNAME=your_email
+MAIL_PASSWORD=your_app_password
+
 ```
 
 ---
 
-# 💾 Database
-
-The application uses **PostgreSQL (Neon)**.
-
-### User Table
-
-| Field    | Type          |
-| -------- | ------------- |
-| id       | Integer       |
-| username | String        |
-| email    | String        |
-| password | Hashed String |
-
-Passwords are stored using **secure hashing**, never in plain text.
+# 🔐 Security Highlights
+- Passwords are hashed (never stored in plain text)
+- Token-based password reset with expiration
+- Strong password validation using regex
+- Secure session handling with Flask-Login
+- Environment variables for sensitive data
 
 ---
 
@@ -175,8 +178,8 @@ Passwords are stored using **secure hashing**, never in plain text.
 ### 1️⃣ Clone the repository
 
 ```
-git clone https://github.com/YOUR_USERNAME/flask-auth-system.git
-cd flask-auth-system
+git clone https://github.com/YOUR_USERNAME/flask-auth-pro.git
+cd flask-auth-pro
 ```
 
 ### 2️⃣ Create virtual environment
@@ -224,12 +227,18 @@ python app.py
 
 The project is deployed using **Vercel serverless Python functions**.
 
+Key Challenges Solved
+- Running Flask in serverless environment
+- Connecting external Neon PostgreSQL database
+- Fixing `postgres:// → postgresql://` issue
+- Managing environment variables securely
+
 Deployment steps:
 
 1. Push project to GitHub
 2. Import repository into Vercel
 3. Configure environment variables
-4. Deploy application
+4. Deploy
 
 ---
 
@@ -251,13 +260,12 @@ Through this project:
 
 Possible upgrades:
 
-• Email sending for password reset
-• JWT authentication system
-• User profile management
+• Email verification system
+• OAuth login (Google, GitHub)
+• JWT authentication API
+• User profile system
 • Admin dashboard
-• REST API version of authentication
-• Database migrations using Flask-Migrate
-• Docker containerization
+• Docker deployment
 
 ---
 
@@ -267,6 +275,7 @@ Possible upgrades:
 
 Python Developer | Web Developer
 
+GitHub: https://github.com/Groot0204
 ---
 
 # 📄 License
