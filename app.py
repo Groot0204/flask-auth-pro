@@ -26,6 +26,10 @@ app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev-secret-key")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///database.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# IMPORTENT for Vercel OAuth
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = "None"
+
 # =============================
 # Mail Configuration
 # =============================
@@ -39,7 +43,7 @@ app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
 app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
 
 # =============================
-# Login Manager
+# Init Extensions
 # =============================
 
 db = SQLAlchemy(app)
@@ -50,17 +54,13 @@ login_manager.init_app(app)
 login_manager.login_message = "Please login to continue"
 login_manager.login_message_category = "error"
 
-# =============================
-# Token Serializer
-# =============================
-
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+oauth = OAuth(app)
 
 # =============================
 # OAuth Configuration
 # =============================
-
-oauth = OAuth(app)
 
 google = oauth.register(
     name='google',
@@ -148,28 +148,19 @@ def register():
     db.session.add(user)
     db.session.commit()
 
-    # 🔐 Send verification email
+    # Send verification email
     token = serializer.dumps(email, salt="email-verify")
     verify_link = url_for('verify_email', token=token, _external=True)
-
-    msg = Message(
-        "Verify Your Email",
-        sender=app.config['MAIL_USERNAME'],
-        recipients=[email]
-    )
-
-    msg.html = f"""
-    <h2>Email Verification</h2>
-    <p>Click below to verify your account:</p>
-    <a href="{verify_link}">Verify Email</a>
-    """
-
-    print("Mail system initialized")
     try:
+        msg = Message(
+            "Verify Your Email",
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.html = f"<a href='{verify_link}'>Verify Email</a>"
         mail.send(msg)
-        print("Email sent successfully")
     except Exception as e:
-        print("Failed to send email:", e)
+        print("Failed to send verification email:", e)
         flash("Failed to send verification email. Please try again later.", "error")
 
     flash("Check your email to verify your account before login.", "success")
@@ -184,16 +175,15 @@ def verify_email(token):
     try:
         email = serializer.loads(token, salt="email-verify", max_age=3600)
     except:
-        flash("Verification link expired or invalid!", "error")
+        flash("Invalid or expired link !", "error")
         return redirect(url_for('home'))
 
     user = User.query.filter_by(email=email).first()
-
     if user:
         user.is_verified = True
         db.session.commit()
-        flash("Email verified successfully!", "success")
-
+    
+    flash("Email verified successfully!", "success")
     return redirect(url_for('home'))
 
 # =============================
@@ -320,12 +310,23 @@ def google_login():
 
 @app.route('/callback/google')
 def google_callback():
-    token = google.authorize_access_token()
-    user_info = google.get('https://www.googleapis.com/oauth2/v3/userinfo').json()
-    print("TOKEN:", token)
+    try:
+        token = google.authorize_access_token()
+        user_info = google.get('https://www.googleapis.com/oauth2/v3/userinfo').json()
 
-    email = user_info.get("email")
-    username = user_info.get("name")
+        print("Google User:", user_info)
+
+        email = user_info.get("email")
+        username = user_info.get("name")
+
+        if not email:
+            flash("Google email not available!", "error")
+            return redirect(url_for('home'))
+        
+    except Exception as e:
+        print("Google OAuth error:", e)
+        flash("Google login failed. Please try again.", "error")
+        return redirect(url_for('home'))
 
     user = User.query.filter_by(email=email).first()
 
@@ -352,15 +353,27 @@ def github_login():
 
 @app.route('/callback/github')
 def github_callback():
-    token = github.authorize_access_token()
-    user_info = github.get('user').json()
+    try:
+        token = github.authorize_access_token()
+        user_info = github.get('user').json()
 
-    email = user_info.get('email')
-    username = user_info.get('login')
+        print("GitHub User:", user_info)
 
-    if not email:
-        emails = github.get('user/emails').json()
-        email = next((e['email'] for e in emails if e['primary']), None)
+        email = user_info.get('email')
+        username = user_info.get('login')
+
+        if not email:
+            emails = github.get('user/emails').json()
+            email = next((e['email'] for e in emails if e ['primary']), None)
+        
+        if not email:
+            flash("GitHub email not found!", "error")
+            return redirect(url_for('home'))
+    
+    except Exception as e:
+        print("GitHub OAuth error:", e)
+        flash("GitHub login failed. Please try again.", "error")
+        return redirect(url_for('home'))
 
     user = User.query.filter_by(email=email).first()
 
