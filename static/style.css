@@ -151,6 +151,7 @@ h1 {
     border: 1px solid #ccc;
     border-radius: 25%;
     display: inline-flex;
+    position: relative;
     justify-content: center;
     align-items: center;
     margin: 0 3px;
@@ -158,6 +159,23 @@ h1 {
     height: 50px;
     border-color: #fff;
     border-width: 2px;
+}
+/* Active buttons */
+.social-icons a.active-btn {
+    transition: all 0.3s ease;
+}
+
+.social-icons a.active-btn:hover {
+    transform: translateY(-5px) scale(1.1);
+    background: linear-gradient(to right, #279eb6, #b52cae);
+    color: white;
+}
+
+/* Disabled buttons */
+.social-icons a.disabled-btn {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
 }
 
 .toggle-container {
@@ -466,3 +484,40 @@ h1 {
         transform: translateY(0);
     }
 }
+
+/* ===== OAuth Button Upgrade ===== */
+
+.social-icons a.social-btn {
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.social-icons a:active {
+    transform: scale(0.95);
+}
+
+/* Google glow */
+.social-icons a.google:hover {
+    box-shadow: 0 6px 15px rgba(255, 255, 255, 0.6);
+}
+
+/* GitHub glow */
+.social-icons a.github:hover {
+    box-shadow: 0 6px 15px rgba(255, 255, 255, 0.6);
+}
+
+/* X(Twitter) glow */
+.social-icons a.twitter:hover {
+    box-shadow: 0 6px 15px rgba(255, 255, 255, 0.6);
+}
+
+/* Apple glow */
+.social-icons a.apple:hover {
+    box-shadow: 0 6px 15px rgba(255, 255, 255, 0.6);
+}
+/* Disabled buttons
+.social-icons a.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
+} */

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
-from flask_mail import Mail,Message
+from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     UserMixin,
@@ -7,50 +7,80 @@ from flask_login import (
     LoginManager,
     login_required,
     logout_user,
-    current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import or_
 from itsdangerous import URLSafeTimedSerializer
+from authlib.integrations.flask_client import OAuth
+from dotenv import load_dotenv
+load_dotenv()
 
 import os
 import re
-import secrets
-
 
 # =============================
 # App Configuration
 # =============================
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 
-db_url = os.environ.get("DATABASE_URL")
-if db_url and db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev-secret-key")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", "sqlite:///database.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-print(secrets.token_hex(32))  # Generate a random secret key for testing
 
 # =============================
-# Mail Configuration (SMTP)
+# Mail Configuration
 # =============================
+
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
 app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
+app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
+
+# =============================
+# Login Manager
+# =============================
 
 db = SQLAlchemy(app)
+mail = Mail(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_message = "Please login to continue"
 login_manager.login_message_category = "error"
 
-# Token serializer for password reset
+# =============================
+# Token Serializer
+# =============================
+
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+# =============================
+# OAuth Configuration
+# =============================
+
+oauth = OAuth(app)
+
+google = oauth.register(
+    name='google',
+    client_id= os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET"),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
+
+github = oauth.register(
+    name='github',
+    client_id = os.environ.get("GITHUB_CLIENT_ID"),
+    client_secret=os.environ.get("GITHUB_CLIENT_SECRET"),
+    access_token_url='https://github.com/login/oauth/access_token',
+    authorize_url='https://github.com/login/oauth/authorize',
+    api_base_url='https://api.github.com/',
+    client_kwargs={'scope': 'user:email'}
+)
 
 # =============================
 # Database Model
@@ -61,29 +91,25 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    is_verified = db.Column(db.Boolean, default=False)
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-#============================
-# Password Strength Validation
-#============================
+# =============================
+# Password Validation
+# =============================
 
 def is_strong_password(password):
-    if len(password) < 8:
-        return False
-    if not re.search(r"[A-Z]", password):
-        return False
-    if not re.search(r"[a-z]", password):
-        return False
-    if not re.search(r"[0-9]", password):
-        return False
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-        return False
-    return True
-
+    return (
+        len(password) >= 8
+        and re.search(r"[A-Z]", password)
+        and re.search(r"[a-z]", password)
+        and re.search(r"[0-9]", password)
+        and re.search(r"[!@#$%^&*(),.?\":{}|<>]", password)
+    )
 
 # =============================
 # Routes
@@ -93,51 +119,83 @@ def is_strong_password(password):
 def home():
     return render_template("base.html")
 
+# =============================
+# Register + Email Verification
+# =============================
 
-# =============================
-# Register
-# =============================
 @app.route('/register', methods=['POST'])
 def register():
     username = request.form.get("username")
     email = request.form.get("email")
     password = request.form.get("password")
 
-    # Check if username exists
-    existing_user = User.query.filter_by(username=username).first()
-    if existing_user:
+    if User.query.filter_by(username=username).first():
         flash("Username already exists!", "error")
         return redirect(url_for('home'))
 
-    # Check if email exists
-    existing_email = User.query.filter_by(email=email).first()
-    if existing_email:
+    if User.query.filter_by(email=email).first():
         flash("Email already registered!", "error")
         return redirect(url_for('home'))
-    
+
     if not is_strong_password(password):
         flash("Password must be strong!", "error")
         return redirect(url_for('home'))
 
-    # Hash password
-    hashed_password = generate_password_hash(password)
-
-    # Create new user
-    new_user = User(
+    user = User(
         username=username,
         email=email,
-        password=hashed_password
+        password=generate_password_hash(password)
     )
 
-    db.session.add(new_user)
+    db.session.add(user)
     db.session.commit()
 
-    flash("Account created successfully!", "success")
+    # 🔐 Send verification email
+    token = serializer.dumps(email, salt="email-verify")
+    verify_link = url_for('verify_email', token=token, _external=True)
+
+    msg = Message(
+        "Verify Your Email",
+        sender=app.config['MAIL_USERNAME'],
+        recipients=[email]
+    )
+
+    msg.html = f"""
+    <h2>Email Verification</h2>
+    <p>Click below to verify your account:</p>
+    <a href="{verify_link}">Verify Email</a>
+    """
+
+    print("Mail system initialized")
+
+    mail.send(msg)
+
+    flash("Check your email to verify your account before login.", "success")
     return redirect(url_for('home'))
 
+# =============================
+# Verify Email
+# =============================
+
+@app.route('/verify-email/<token>')
+def verify_email(token):
+    try:
+        email = serializer.loads(token, salt="email-verify", max_age=3600)
+    except:
+        flash("Verification link expired or invalid!", "error")
+        return redirect(url_for('home'))
+
+    user = User.query.filter_by(email=email).first()
+
+    if user:
+        user.is_verified = True
+        db.session.commit()
+        flash("Email verified successfully!", "success")
+
+    return redirect(url_for('home'))
 
 # =============================
-# Login (Email or Username)
+# Login
 # =============================
 
 @app.route('/login', methods=['POST'])
@@ -145,19 +203,24 @@ def login():
     identifier = request.form.get("identifier")
     password = request.form.get("password")
 
-    # Check if identifier is email or username and query accordingly
-    user = User.query.filter(or_(User.username == identifier, User.email == identifier)).first()
+    user = User.query.filter(
+        or_(User.username == identifier, User.email == identifier)
+    ).first()
 
     if user and check_password_hash(user.password, password):
+
+        if not user.is_verified:
+            flash("Please verify your email first!", "error")
+            return redirect(url_for('home'))
+
         login_user(user)
         return redirect(url_for('dashboard'))
-    else:
-        flash("Invalid username or password!", "error")
-        return redirect(url_for('home'))
 
+    flash("Invalid username or password!", "error")
+    return redirect(url_for('home'))
 
 # =============================
-# Dashboard (Protected)
+# Dashboard
 # =============================
 
 @app.route('/dashboard')
@@ -165,6 +228,69 @@ def login():
 def dashboard():
     return render_template("dashboard.html")
 
+# =============================
+# Forgot Password
+# =============================
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get("email")
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            token = serializer.dumps(email, salt="reset-password")
+            reset_link = url_for('reset_password', token=token, _external=True)
+
+            msg = Message(
+                "Password Reset",
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email]
+            )
+
+            msg.html = f"""
+            <h2>Password Reset</h2>
+            <a href="{reset_link}">Reset Password</a>
+            """
+
+            mail.send(msg)
+            flash("Reset link sent!", "success")
+        else:
+            flash("Email not found!", "error")
+
+        return redirect(url_for('home'))
+
+    return render_template("forgot_password.html")
+
+# =============================
+# Reset Password
+# =============================
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt="reset-password", max_age=600)
+    except:
+        flash("Reset link expired!", "error")
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        password = request.form.get("password")
+
+        if not is_strong_password(password):
+            flash("Weak password!", "error")
+            return redirect(request.url)
+
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            user.password = generate_password_hash(password)
+            db.session.commit()
+            flash("Password updated!", "success")
+
+        return redirect(url_for('home'))
+
+    return render_template("reset_password.html")
 
 # =============================
 # Logout
@@ -177,76 +303,79 @@ def logout():
     flash("Logged out successfully.", "success")
     return redirect(url_for('home'))
 
-
 # =============================
-# Forgot Password
-# =============================
-
-mail = Mail(app)
-@app.route('/forgot-password', methods=['GET', 'POST'])
-def forgot_password():
-    if request.method == 'POST':
-        email = request.form.get("email")
-        user = User.query.filter_by(email=email).first()
-        if user:
-            token = serializer.dumps(email, salt="reset-password")
-            reset_link = url_for(
-                'reset_password',
-                token=token,
-                _external=True
-            )
-            msg = Message(
-                "Password Reset Request",
-                sender="iamgroot130204@gmail.com",
-                recipients=[email]
-            )
-            msg.body = f"Click the link to reset your password: {reset_link}"
-
-            msg.html = f"""
-            <h2>Password Reset Request</h2>
-            <a href="{reset_link}">Reset Password</a>
-            """
-            print("MAIL USER:", app.config['MAIL_USERNAME'])
-            print("MAIL PASS:", app.config['MAIL_PASSWORD'])
-            
-            mail.send(msg)
-            flash("Password reset link sent to your email!", "success")
-        else:
-            flash("Email not Found!", "error")
-        return redirect(url_for('home'))
-    return render_template("forgot_password.html")
-
-# =============================
-# Reset Password
+# OAuth: Google
 # =============================
 
-@app.route('/reset-password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    try:
-        email = serializer.loads(token, salt="reset-password", max_age=600)
-    except:
-        flash("Reset link expired or invalid!", "error")
-        return redirect(url_for('home'))
-    if request.method == 'POST':
-        password = request.form.get("password")
-        if not is_strong_password(password):
-            flash("Password must be strong!", "error")
-            return redirect(request.url)
-        
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            flash("User not found!", "error")
-            return redirect(url_for('home'))
-        
-        user.password = generate_password_hash(password)
+@app.route('/login/google')
+def google_login():
+    return google.authorize_redirect(url_for('google_callback', _external=True))
+
+
+@app.route('/callback/google')
+def google_callback():
+    token = google.authorize_access_token()
+    user_info = google.get('https://www.googleapis.com/oauth2/v3/userinfo').json()
+    print("TOKEN:", token)
+
+    email = user_info.get("email")
+    username = user_info.get("name")
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(os.urandom(16).hex()),
+            is_verified=True
+        )
+        db.session.add(user)
         db.session.commit()
-        flash("Password reset successful!", "success")
-        return redirect(url_for('home'))
-    return render_template("reset_password.html")
 
+    login_user(user)
+    return redirect(url_for('dashboard'))
+
+# =============================
+# OAuth: GitHub
+# =============================
+
+@app.route('/login/github')
+def github_login():
+    return github.authorize_redirect(url_for('github_callback', _external=True))
+
+@app.route('/callback/github')
+def github_callback():
+    token = github.authorize_access_token()
+    user_info = github.get('user').json()
+
+    email = user_info.get('email')
+    username = user_info.get('login')
+
+    if not email:
+        emails = github.get('user/emails').json()
+        email = next((e['email'] for e in emails if e['primary']), None)
+
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(os.urandom(16).hex()),
+            is_verified=True
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    login_user(user)
+    return redirect(url_for('dashboard'))
 
 # =============================
 # Run App
-# Vercel needs this to run the app
 # =============================
-app = app
+
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)

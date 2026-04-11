@@ -1,68 +1,78 @@
 # 🔐 Flask Auth Pro  
-### Production-Ready Authentication System (Flask • Vercel • PostgreSQL • Email Reset)
+### Production-Ready Authentication System (Flask • PostgreSQL • OAuth • Email Verification)
 
-A **full-stack authentication system** built using Flask and deployed on **Vercel serverless architecture**, featuring secure login, registration, and email-based password recovery.
+A **full-stack authentication system** built using Flask, featuring secure login, registration, email verification, OAuth login, and password recovery.
 
-> ⚡ Built with real-world challenges: serverless backend, cloud database, and secure authentication flow.
+> ⚡ Designed with real-world practices: secure authentication, token-based flows, and scalable backend.
 
 ---
 
 ## 🌐 Live Demo
 
-🔗 https://flask-auth-pro-groot.vercel.app
+🔗 https://flask-auth-pro-groot.vercel.app  
 
 ---
 
-## ✨ Core Features
+## ✨ Features
 
 ### 🔑 Authentication System
 - User Registration with validation
 - Login using **username OR email**
 - Secure logout system
-- Protected Dashboard(@login_required)
+- Protected dashboard (`@login_required`)
 
-### 🔐 Security Implementation
+### 📧 Email Verification System
+- Verification email sent on registration
+- Token-based verification using `itsdangerous`
+- Expiring verification links (1 hour)
+- Prevent login until email is verified
+
+### 🔐 Password Reset System
+- Forgot password via email
+- Secure reset link with token
+- Token expiration (10 minutes)
+- Strong password validation enforced
+
+### 🔗 OAuth Login
+- Google Login
+- GitHub Login
+- Auto account creation on first OAuth login
+
+### 🔐 Security Features
 - Password hashing using `Werkzeug`
 - Strong password validation:
   - Minimum 8 characters
-  - Uppercase, lowercase
+  - Uppercase + lowercase
   - Number + special character
-- Secure token-based password reset (itsdangerous)
-- Token expiration (10 minutes)
-
-### 📧 Email System
-- Password reset via SMTP(Flask-Mail)
-- Secure reset links
-- HTML email support
-
-### ⚡ Deployment & Backend
-- Serverless deployment using **Vercel**
-- Cloud database using **Neon PostgreSQL**
-- Environment variable-based configuration
-- Production-ready structure
+- Secure token generation (`itsdangerous`)
+- Session management with `Flask-Login`
+- Environment variables for sensitive data
 
 ### 🎨 UI / UX
-- Modern Glassmorphism Design
-- Fully responsive (Mobile + Desktop)
-- Animated login/register toggle
-- Password strength meter (real-time)
-- Flash messages with auto-dismiss
-- Button loading states
+- Modern glassmorphism design
+- Fully responsive (mobile + desktop)
+- Animated login/register toggle  
+- Password strength meter (real-time) :contentReference[oaicite:0]{index=0}  
+- Flash messages with auto-dismiss  
+- Button loading states  
+
 ---
 
-# 🛠 Tech Stack
+## 🛠 Tech Stack
 
-| Technology            | Purpose                             |
-| --------------------- | ----------------------------------- |
-| **Flask**             | Backend Web Framework               |
-| **Flask-Login**       | Authentication & session management |
-| **Flask-SQLAlchemy**  | ORM for database operations         |
-| **PostgreSQL (Neon)** | Cloud database                      |
-| **Flask-Mail**        | Email                               |
-| **Werkzeug**          | Password hashing                    |
-| **itsdangerous**      | Secure token generation             |
-| **Vercel**            | Serverless deployment platform      |
-| **Frontend**          | HTML, CSS, JavaScript               |
+| Technology          | Purpose                             |
+|---------------------|-------------------------------------|
+| Flask               | Backend framework                   |
+| Flask-Login         | Authentication & session handling   |
+| Flask-SQLAlchemy    | ORM for database                    |
+| PostgreSQL / SQLite | Database                            |
+| Flask-Mail          | Email system                        |
+| Authlib             | OAuth integration                   |
+| Werkzeug            | Password hashing                    |
+| itsdangerous        | Token generation                    |
+| HTML / CSS / JS     | Frontend UI                         |
+
+Dependencies used: :contentReference[oaicite:1]{index=1}  
 
 ---
 
@@ -92,84 +102,51 @@ flask-auth-system/
 
 ---
 
-# 📸 Application Screenshots
-
-*(You can add screenshots here for better presentation)*
-
-## 📸 Screenshots
-
-### 🔐 Authentication UI
-![Login](assets/login.png)
-![Register](assets/register.png)
-
-### 📱 Mobile View
-![Mobile Login](assets/mobile-login.png)
-
-### 📊 Dashboard
-![Dashboard](assets/dashboard.png)
-
-
 # 🏗 System Architecture
 
 ```
 User Browser
       ↓
-Vercel Serverless Function (Flask)
+Flask Application
       ↓
 SQLAlchemy ORM
       ↓
-Neon PostgreSQL Cloud Database
+Database (PostgreSQL/SQlite)
 ```
 
-# 🔄 Authentication Flow:
+## 🔄 Authentication Flow:
 
-1. User sends request from browser
-2. Flask serverless function processes request
-3. SQLAlchemy communicates with PostgreSQL
-4. Database returns data to Flask
-5. Flask renders response to user
+1. User registers with email + password  
+2. Verification email is sent  
+3. User clicks verification link  
+4. Account gets activated  
+5. User logs in  
+6. Dashboard is accessible  
 
 ---
 
-# ⚙️ Environment Variables
+# ⚙️ Environment Variables\
+
+Create a `.env` or set environment variables:
 
 The following environment variables must be configured in **Vercel → Project Settings → Environment Variables**
-
-| Variable      | Description                       |
-| ------------- | --------------------------------- |
-| DATABASE_URL  | Neon PostgreSQL connection string |
-| SECRET_KEY    | Flask secret key                  |
-| MAIL_USERNAME | Email for SMTP                    |
-| MAIL_PASSWORD | App password                      |
 
 Example:
 
 ```
-DATABASE_URL=postgresql://username:password@host/dbname?sslmode=require
+DATABASE_URL=your_database_url
 SECRET_KEY=your_secret_key
+
 MAIL_USERNAME=your_email
 MAIL_PASSWORD=your_app_password
 
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_secret
+
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_secret
+
 ```
-
----
-
-# 🔐 Security Highlights
-- Passwords are hashed (never stored in plain text)
-- Token-based password reset with expiration
-- Strong password validation using regex
-- Secure session handling with Flask-Login
-- Environment variables for sensitive data
-
----
-
-# 🔐 Security Features
-
-• Password hashing using `generate_password_hash()`
-• Password verification using `check_password_hash()`
-• Secure password reset tokens using `itsdangerous`
-• Strong password validation rules
-• Environment variable protection for sensitive data
 
 ---
 
@@ -223,22 +200,22 @@ python app.py
 
 ---
 
-# 🌐 Deployment
+# 🔐 Security Highlights
+- Passwords are hashed (never stored in plain text)
+- Email verification required before login
+- Token-based password reset with expiration
+- Regex-based strong password validation
+- Secure session handling
 
-The project is deployed using **Vercel serverless Python functions**.
+---
 
-Key Challenges Solved
-- Running Flask in serverless environment
-- Connecting external Neon PostgreSQL database
-- Fixing `postgres:// → postgresql://` issue
-- Managing environment variables securely
+# 🔐 Security Features
 
-Deployment steps:
-
-1. Push project to GitHub
-2. Import repository into Vercel
-3. Configure environment variables
-4. Deploy
+• Password hashing using `generate_password_hash()`
+• Password verification using `check_password_hash()`
+• Secure password reset tokens using `itsdangerous`
+• Strong password validation rules
+• Environment variable protection for sensitive data
 
 ---
 
@@ -260,12 +237,12 @@ Through this project:
 
 Possible upgrades:
 
-• Email verification system
-• OAuth login (Google, GitHub)
+• Email resend verification
 • JWT authentication API
 • User profile system
 • Admin dashboard
 • Docker deployment
+• Rate limiting for security
 
 ---
 

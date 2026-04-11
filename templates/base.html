@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/assets/icons8-python-48.png" type="image" sizes="16x16">
     <title>Flask Authentication System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <!-- Your CSS -->
@@ -42,10 +43,18 @@
             <form method="POST" action="{{ url_for('register') }}">
                 <h1>Create Account</h1>
                 <div class="social-icons">
-                    <a href="#"><i class="fa-brands fa-google"></i></a>
-                    <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
-                    <a href="#"><i class="fa-brands fa-github"></i></a>
-                    <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="{{ url_for('google_login') }}" class="social-btn google">
+                        <i class="fa-brands fa-google"></i>
+                    </a>
+                    <a href="{{ url_for('github_login') }}" class="social-btn github">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                    <a href="#" class="social-btn twitter" title="Coming Soon">
+                        <i class="fa-brands fa-x-twitter"></i>
+                    </a>
+                    <a href="#" class="social-btn apple" title="Coming Soon">
+                        <i class="fa-brands fa-apple"></i>
+                    </a>
                 </div>
 
                 <span>or use your email</span>
@@ -75,10 +84,18 @@
             <form method="POST" action="{{ url_for('login') }}">
                 <h1>Sign In</h1>
                 <div class="social-icons">
-                    <a href="#"><i class="fa-brands fa-google"></i></a>
-                    <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
-                    <a href="#"><i class="fa-brands fa-github"></i></a>
-                    <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                    <a href="{{ url_for('google_login') }}" class="social-btn google">
+                        <i class="fa-brands fa-google"></i>
+                    </a>
+                    <a href="{{ url_for('github_login') }}" class="social-btn github">
+                        <i class="fa-brands fa-github"></i>
+                    </a>
+                    <a href="#" class="social-btn twitter" title="Coming Soon">
+                        <i class="fa-brands fa-x-twitter"></i>
+                    </a>
+                    <a href="#" class="social-btn apple" title="Coming Soon">
+                        <i class="fa-brands fa-apple"></i>
+                    </a>
                 </div>
 
                 <span>or use your email password</span>
