@@ -12,8 +12,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import or_
 from itsdangerous import URLSafeTimedSerializer
 from authlib.integrations.flask_client import OAuth
-from dotenv import load_dotenv
-load_dotenv()
 
 import os
 import re
@@ -167,8 +165,12 @@ def register():
     """
 
     print("Mail system initialized")
-
-    mail.send(msg)
+    try:
+        mail.send(msg)
+        print("Email sent successfully")
+    except Exception as e:
+        print("Failed to send email:", e)
+        flash("Failed to send verification email. Please try again later.", "error")
 
     flash("Check your email to verify your account before login.", "success")
     return redirect(url_for('home'))
@@ -253,8 +255,12 @@ def forgot_password():
             <a href="{reset_link}">Reset Password</a>
             """
 
-            mail.send(msg)
-            flash("Reset link sent!", "success")
+            try:
+                mail.send(msg)
+                flash("Reset link sent!", "success")
+            except Exception as e:
+                print("Failed to send reset email:", e)
+                flash("Failed to send reset email. Please try again later.", "error")
         else:
             flash("Email not found!", "error")
 
